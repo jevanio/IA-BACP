@@ -179,7 +179,6 @@ void cargar_cargaacademica_greedy() {
 				sbest[i]+=aux->creditos;
 			aux=aux->siguiente;
 		}
-		printf("Periodo %d: %d\n", i+1,  sbest[i]);
 	}
 }
 
@@ -279,9 +278,7 @@ void greedy() {
 	/*
 	*	Bucle hasta asignar todos a un periodo.
 	*/
-	int iteracion=1;
 	while(porasignar()) {
-		printf("Iteracion %d\n", iteracion);
 		cargar_cargaacademica_greedy();
 		while(prerequisitos_insatisfechos(aux->prereq) || aux->periodo!=0) {
 			if (aux==ultimo)
@@ -299,13 +296,15 @@ void greedy() {
 			// Encontrar el periodo más lejano de sus prerequisitos, asignar entre ese y el infinito al perido con menor carga academica.
 			aux->periodo=min_periodo(ultimo_periodo(aux->prereq));
 		}
-		//break;
-		iteracion++;
-//		if (iteracion>5)
-//			break;
 	}
 }
 
+/*
+*	Archivo Solución
+*/
+void archivo_solucion() {
+
+}
 /*
 *	Iniciando del todo
 */
@@ -315,7 +314,7 @@ int main() {
 	leer();	
 	greedy();
 	cargar_cargaacademica_greedy();
-	mostrar();
+	//mostrar();
 
 	return 0;
  }
