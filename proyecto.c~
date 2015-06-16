@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct _malla{
+	int n_cursos;
+	int n_periodos;
+	int min_creditos;
+	int max_creditos;
+	int min_cursos;
+	int max_cursos;
+	int n_prerequisitos;
+};
+
+struct _malla *malla;
+
+struct _cursos {
+	int pos;
+	int creditos;
+	int periodo;
+	struct _cursos *siguiente;
+};
+
+struct _cursos *primero, *ultimo;
+
+void leer() {
+	malla = (struct _malla *) malloc (sizeof(struct _malla));
+	/*if (nuevo==NULL) printf( "No hay memoria disponible!\n");*/
+	FILE *fp;
+
+	fp = fopen ("bacp8.txt", "r");
+	/*if (fp==NULL) {fputs ("File error",stderr); exit(1);}*/
+	fscanf(fp, "%d %d %d %d %d %d %d \n" ,&malla->n_cursos, &malla->n_periodos, &malla->min_creditos, &malla->max_creditos, &malla->min_cursos, &malla->max_cursos, &malla->n_prerequisitos);
+
+	struct _cursos *nuevo;
+	int i;
+	for(i=0;i<malla->n_cursos;i++) {
+		nuevo = (struct _cursos *) malloc (sizeof(struct _cursos));
+		nuevo->pos = i;
+		fscanf(fp, "%d ", &nuevo->creditos);
+		nuevo->periodo=0;
+		nuevo->siguiente=NULL;
+
+		if (primero==NULL) {
+			primero = nuevo;
+			ultimo = nuevo;
+		}
+		else {
+			ultimo->siguiente = nuevo;
+			ultimo = nuevo;
+		}
+	}
+	fclose (fp);
+}
+
+void mostrar(){
+	struct _cursos *aux;
+	aux = primero;
+	while(aux!=NULL) {
+		printf(" Curso: %d\n Créditos: %d\n Periodo: %d\n", aux->pos, aux->creditos, aux->periodo);
+		aux=aux->siguiente;
+	}
+	printf("\n Cursos: %d\n Periodos: %d\n Min_Creditos: %d\n Max_Creditos: %d\n Min_Cursos: %d\n Max_Cursos: %d\n Prerequisios: %d\n", malla->n_cursos, malla->n_periodos, malla->min_creditos, malla->max_creditos,	malla->min_cursos, malla->max_cursos, malla->n_prerequisitos);
+}
+int main() {
+	primero = (struct _cursos *) NULL;
+	ultimo = (struct _cursos *) NULL;
+	leer();	
+	mostrar();
+	
+	return 0;
+ }
