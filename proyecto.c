@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#define Instancia "bacp8.txt"
+#include <time.h>
+#define Instancia "instancias/bacp12.txt"
 
 struct _malla{
 	int n_cursos;
@@ -32,24 +32,33 @@ struct _cursos {
 	struct _cursos *siguiente;
 };
 
-struct _malla *malla;
-struct _cursos *primero, *ultimo;
+struct _cursos *primero;
 int sbest[12];
+
+/*
+*	encontrar ultimo elemento de la lista
+*/
+struct _cursos *getultimo(struct _cursos *aux) {
+	while(aux->siguiente!=NULL)
+		aux=aux->siguiente;
+	return aux;
+}
 
 /*
 *	Lee la instancia y la ingresa a la representacion elegida: Lista Enlazada.
 */
-void leer() {
+void leer(struct _malla **mallas) {
 	int i,flag;
 	struct _cursos *nuevo, *aux;
 	struct _prereq *prereq, *aux2;
 	struct _req *req, *aux3;
+	struct _malla *malla;
 	FILE *fp;
+	malla = *mallas;
 
 	/* 
 	*	Información del curriculo
 	*/
-	malla = (struct _malla *) malloc (sizeof(struct _malla));
 	/*if (nuevo==NULL) printf( "No hay memoria disponible!\n");*/
 
 	fp = fopen (Instancia, "r");
@@ -70,11 +79,9 @@ void leer() {
 
 		if (primero==NULL) {
 			primero = nuevo;
-			ultimo = nuevo;
 		}
 		else {
-			ultimo->siguiente = nuevo;
-			ultimo = nuevo;
+			getultimo(primero)->siguiente = nuevo;
 		}
 	}
 	/*
@@ -127,7 +134,7 @@ void leer() {
 /*
 *	Muestra la información recolectada de los cursos.
 */
-void mostrar(){
+void mostrar(struct _malla *malla){
 	struct _cursos *aux;
 	struct _prereq *aux2;
 	struct _req *aux3;
@@ -168,7 +175,7 @@ void mostrar(){
 /*
 * Cuenta carga académica de cada periodo
 */
-void cargar_cargaacademica_greedy() {
+void cargar_cargaacademica_greedy(struct _malla *malla) {
 	int i;
 	struct _cursos *aux;
 	for(i=0;i<malla->n_periodos;i++) {
@@ -185,7 +192,21 @@ void cargar_cargaacademica_greedy() {
 /*
 *	Determina el periodo con menor carga académica. Si hay dos iguales se queda con el primero que encuentra.
 */
-int min_periodo(int p) {
+int max_periodo(struct _malla *malla) {
+	int i, saux=sbest[0];
+	for(i=0;i<malla->n_periodos;i++)
+	{
+		if(sbest[i]>saux) {
+			saux=sbest[i];
+		}
+	}
+	return saux;
+}
+
+/*
+*	Determina el periodo con menor carga académica. Si hay dos iguales se queda con el primero que encuentra.
+*/
+int min_periodo(int p, struct _malla *malla) {
 	int i, min_p=p-1,saux=sbest[0];
 	for(i=p;i<malla->n_periodos;i++)
 	{
@@ -258,7 +279,7 @@ int ultimo_periodo(struct _prereq *aux2) {
 *					Cursos con prerequisitos se asignar solo al ser satisfechos. Esto es entre el periodo posterior 
 *									a su prerequisito más cercano y el último periodo (salvo sean requisito de otro).
 */
-void greedy() {
+void greedy(struct _malla *malla) {
 	struct _cursos *aux;
 	aux=primero;
 	/*
@@ -267,7 +288,7 @@ void greedy() {
 	while(aux!=NULL) {
 		if(aux->prereq==NULL) {
 			aux->periodo=1;
-			if (aux==ultimo)
+			if (aux==getultimo(primero))
 				aux=primero;
 			else
 				aux=aux->siguiente;
@@ -279,9 +300,9 @@ void greedy() {
 	*	Bucle hasta asignar todos a un periodo.
 	*/
 	while(porasignar()) {
-		cargar_cargaacademica_greedy();
+		cargar_cargaacademica_greedy(malla);
 		while(prerequisitos_insatisfechos(aux->prereq) || aux->periodo!=0) {
-			if (aux==ultimo)
+			if (aux==getultimo(primero))
 				aux=primero;
 			else
 				aux=aux->siguiente;
@@ -290,31 +311,155 @@ void greedy() {
 			/*
 			*	Asignar al periodo con menor cantidad de carga.
 			*/
-			aux->periodo=min_periodo(1);
+			aux->periodo=min_periodo(1, malla);
 		}
 		else {
 			// Encontrar el periodo más lejano de sus prerequisitos, asignar entre ese y el infinito al perido con menor carga academica.
-			aux->periodo=min_periodo(ultimo_periodo(aux->prereq));
+			aux->periodo=min_periodo(ultimo_periodo(aux->prereq), malla);
 		}
 	}
 }
 
+
+/*
+*	Quicksort, cortesía de http://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
+*/
+// Partitions the list taking the last element as the pivot
+struct _cursos *partition(struct _cursos *head, struct _cursos *end,
+                       struct _cursos **newHead, struct _cursos **newEnd)
+{
+    struct _cursos *pivot = end;
+    struct _cursos *prev = NULL, *cur = head, *tail = pivot;
+ 
+    // During partition, both the head and end of the list might change
+    // which is updated in the newHead and newEnd variables
+    while (cur != pivot)
+    {
+        if (cur->periodo < pivot->periodo)
+        {
+            // First node that has a value less than the pivot - becomes
+            // the new head
+            if ((*newHead) == NULL)
+                (*newHead) = cur;
+ 
+            prev = cur;  
+            cur = cur->siguiente;
+        }
+        else // If cur node is greater than pivot
+        {
+            // Move cur node to next of tail, and change tail
+            if (prev)
+                prev->siguiente = cur->siguiente;
+            struct _cursos *tmp = cur->siguiente;
+            cur->siguiente = NULL;
+            tail->siguiente = cur;
+            tail = cur;
+            cur = tmp;
+        }
+    }
+ 
+    // If the pivot data is the smallest element in the current list,
+    // pivot becomes the head
+    if ((*newHead) == NULL)
+        (*newHead) = pivot;
+ 
+    // Update newEnd to the current last node
+    (*newEnd) = tail;
+ 
+    // Return the pivot node
+    return pivot;
+}
+ 
+ 
+//here the sorting happens exclusive of the end node
+struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end)
+{
+    // base condition
+    if (!head || head == end)
+        return head;
+ 
+    struct _cursos *newHead = NULL, *newEnd = NULL;
+ 
+    // Partition the list, newHead and newEnd will be updated
+    // by the partition function
+    struct _cursos *pivot = partition(head, end, &newHead, &newEnd);
+ 
+    // If pivot is the smallest element - no need to recur for
+    // the left part.
+    if (newHead != pivot)
+    {
+        // Set the node before the pivot node as NULL
+        struct _cursos *tmp = newHead;
+        while (tmp->siguiente != pivot)
+            tmp = tmp->siguiente;
+        tmp->siguiente = NULL;
+ 
+        // Recur for the list before pivot
+        newHead = quickSortRecur(newHead, tmp);
+ 
+        // Change next of last node of the left half to pivot
+        tmp = getultimo(newHead);
+        tmp->siguiente =  pivot;
+    }
+ 
+    // Recur for the list after the pivot element
+    pivot->siguiente = quickSortRecur(pivot->siguiente, newEnd);
+ 
+    return newHead;
+}
+
+
+
+
+
+
 /*
 *	Archivo Solución
 */
-void archivo_solucion() {
+void archivo_solucion(struct _malla *malla, clock_t t1) {
+	struct _cursos *aux;
+	int i;
+	FILE *fp;
 
+	aux=primero;
+	fp = fopen ("Resultado", "w");
+	fprintf(fp, "Salida Instancia %s\n", Instancia);
+	for(i=0;i<malla->n_periodos;i++) {
+		fprintf(fp, "Periodo %d\n", i+1);
+		fprintf(fp, "%d ", aux->pos);
+		aux=aux->siguiente;
+		if(aux==NULL) {
+			fprintf(fp, ": %d\n", sbest[i]);
+			break;
+		}
+		while(aux->periodo==(i+1)) {
+			fprintf(fp, "- ");
+			fprintf(fp, "%d ", aux->pos);
+			aux=aux->siguiente;
+			if(aux==NULL)
+				break;
+		}
+		fprintf(fp, ": %d\n", sbest[i]);
+	}
+	fprintf(fp, "\n");
+	fprintf(fp, "Máxima Carga Académica %d\n",max_periodo(malla));
+	fprintf(fp, "Tiempo Ejecución %f s", ((double)clock() - t1) / (double)CLOCKS_PER_SEC);
+	fclose(fp);
 }
+
 /*
 *	Iniciando del todo
 */
 int main() {
+	clock_t t1=clock();
+	struct _malla *malla;
+	malla = (struct _malla *) malloc (sizeof(struct _malla));
 	primero = (struct _cursos *) NULL;
-	ultimo = (struct _cursos *) NULL;
-	leer();	
-	greedy();
-	cargar_cargaacademica_greedy();
-	//mostrar();
-
+	leer(&malla);	
+	greedy(malla);
+	cargar_cargaacademica_greedy(malla);
+	primero = quickSortRecur(primero, getultimo(primero));
+	mostrar(malla);
+	archivo_solucion(malla, t1);
 	return 0;
  }

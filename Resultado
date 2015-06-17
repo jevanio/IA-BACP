@@ -1,0 +1,28 @@
+Salida Instancia instancias/bacp12.txt
+Periodo 1
+63 - 51 - 28 - 24 - 14 - 0 : 12
+Periodo 2
+65 - 59 - 30 - 1 : 11
+Periodo 3
+61 - 39 - 26 - 13 - 2 : 12
+Periodo 4
+46 - 41 - 27 - 3 : 9
+Periodo 5
+50 - 32 - 4 : 10
+Periodo 6
+52 - 35 - 5 : 9
+Periodo 7
+55 - 37 - 21 - 6 : 10
+Periodo 8
+57 - 44 - 7 : 11
+Periodo 9
+58 - 54 - 49 - 42 - 31 - 19 - 8 : 25
+Periodo 10
+64 - 53 - 20 - 9 : 13
+Periodo 11
+62 - 60 - 56 - 47 - 40 - 38 - 34 - 33 - 25 - 23 - 22 - 18 - 17 - 16 - 12 - 10 : 59
+Periodo 12
+48 - 45 - 43 - 36 - 29 - 15 - 11 : 23
+
+Máxima Carga Académica 59
+Tiempo Ejecución 0.003323 s
