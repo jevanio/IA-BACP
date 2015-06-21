@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define Instancia "instancias/bacp12.txt"
+#define Instancia "instancias/bacp8.txt"
 
 struct _malla{
 	int n_cursos;
@@ -11,6 +11,7 @@ struct _malla{
 	int min_cursos;
 	int max_cursos;
 	int n_prerequisitos;
+	float carga_optima;
 };
 
 struct _prereq {
@@ -27,6 +28,7 @@ struct _cursos {
 	int pos;
 	int creditos;
 	int periodo;
+	int cadena;
 	struct _prereq *prereq;
 	struct _req *req;
 	struct _cursos *siguiente;
@@ -34,7 +36,6 @@ struct _cursos {
 
 struct _cursos *primero;
 int sbest[12];
-
 /*
 *	encontrar ultimo elemento de la lista
 */
@@ -49,6 +50,7 @@ struct _cursos *getultimo(struct _cursos *aux) {
 */
 void leer(struct _malla **mallas) {
 	int i,flag;
+	float opt=0;
 	struct _cursos *nuevo, *aux;
 	struct _prereq *prereq, *aux2;
 	struct _req *req, *aux3;
@@ -72,7 +74,9 @@ void leer(struct _malla **mallas) {
 		nuevo = (struct _cursos *) malloc (sizeof(struct _cursos));
 		nuevo->pos = i;
 		fscanf(fp, "%d ", &nuevo->creditos);
+		opt+=nuevo->creditos;
 		nuevo->periodo=0;
+		nuevo->cadena=0;
 		nuevo->prereq=NULL;
 		nuevo->req=NULL;
 		nuevo->siguiente=NULL;
@@ -128,6 +132,8 @@ void leer(struct _malla **mallas) {
 			aux3->siguiente=req;
 		}
 	}
+	opt=opt/malla->n_periodos;
+	malla->carga_optima=opt;
 	fclose (fp);
 }
 
@@ -167,37 +173,21 @@ void mostrar(struct _malla *malla){
 			}
 			printf("\n");
 		}
+		printf("%d\n", aux->cadena);
 		aux=aux->siguiente;
 	}
 	printf("\n Cursos: %d\n Periodos: %d\n Min_Creditos: %d\n Max_Creditos: %d\n Min_Cursos: %d\n Max_Cursos: %d\n Prerequisitos: %d\n", malla->n_cursos, malla->n_periodos, malla->min_creditos, malla->max_creditos, malla->min_cursos, malla->max_cursos, malla->n_prerequisitos);
 }
 
 /*
-* Cuenta carga académica de cada periodo
-*/
-void cargar_cargaacademica_greedy(struct _malla *malla) {
-	int i;
-	struct _cursos *aux;
-	for(i=0;i<malla->n_periodos;i++) {
-		sbest[i]=0;
-		aux = primero;
-		while(aux!=NULL) {
-			if(aux->periodo==(i+1))
-				sbest[i]+=aux->creditos;
-			aux=aux->siguiente;
-		}
-	}
-}
-
-/*
 *	Determina el periodo con menor carga académica. Si hay dos iguales se queda con el primero que encuentra.
 */
-int max_periodo(struct _malla *malla) {
-	int i, saux=sbest[0];
+int max_periodo(struct _malla *malla,int carga_periodo[]) {
+	int i, saux=carga_periodo[0];
 	for(i=0;i<malla->n_periodos;i++)
 	{
-		if(sbest[i]>saux) {
-			saux=sbest[i];
+		if(carga_periodo[i]>saux) {
+			saux=carga_periodo[i];
 		}
 	}
 	return saux;
@@ -206,17 +196,17 @@ int max_periodo(struct _malla *malla) {
 /*
 *	Determina el periodo con menor carga académica. Si hay dos iguales se queda con el primero que encuentra.
 */
-int min_periodo(int p, struct _malla *malla) {
-	int i, min_p=p-1,saux=sbest[0];
-	for(i=p;i<malla->n_periodos;i++)
+/*int min_periodo(int p, struct _malla *malla, int carga_periodo[]) {
+	int min_p=p,saux=carga_periodo[p];
+	for(p;p<malla->n_periodos;p++)
 	{
-		if(sbest[i]<saux) {
-			saux=sbest[i];
-			min_p=i;
+		if(carga_periodo[p]<saux) {
+			saux=carga_periodo[p];
+			min_p=p;
 		}
 	}
 	return min_p+1;
-}
+}*/
 
 /*
 * Indica si quedan cursos por asignar a un periodo, por defecto todos parten en 0.
@@ -247,6 +237,7 @@ int prerequisitos_insatisfechos(struct _prereq *aux2) {
 	}
 	return 0;
 }
+
 /*
 *	Mayor periodo de los prerequisitos
 */
@@ -271,27 +262,43 @@ int ultimo_periodo(struct _prereq *aux2) {
 	return ult_per;
 }
 
+int cumple_min(struct _malla *malla, int carga_periodo[], int cursos_periodo[], int ult) {
+	int i;
+	for(i=ult;i<malla->n_periodos;i++) {
+		if(carga_periodo[i]<malla->min_creditos || cursos_periodo[i]<malla->min_cursos)
+			return i+1;
+	}
+	return 0;
+}
+
+int cumple_max(struct _malla *malla, int carga_periodo[], int cursos_periodo[], int creditos, int ult) {
+	int i;
+	for (i=ult;i<malla->n_periodos;i++) {
+		if((carga_periodo[i]+creditos)<=malla->max_creditos && cursos_periodo[i]<malla->max_cursos)
+			return i+1;
+	}
+	return 0;
+}
+
 /*
 *	Algoritmo Greedy, construye la solución inicial.
-*	Función de Evaluaciación: El periodo con mayor carga académia luego de minimizar la carga de todos los periodos.
+*	Función de Evaluaciación: Obtener el periodo con mayor carga académica tras asignar la minima carga posible a todos los periodos.
 *	Punto de Partida: Primer curso sin prerequisitos en primer periodo.
-*	Función Miope:	Añadir curso sin prerequisitos en periodo con menor carga académica más cercano, busqueda ascendente. Si es requisito de otro no se puede asignar al ultimo periodo.
-*					Cursos con prerequisitos se asignar solo al ser satisfechos. Esto es entre el periodo posterior 
-*									a su prerequisito más cercano y el último periodo (salvo sean requisito de otro).
+*	Función Miope: Añadir un curso, luego añadir los cursos que lo requieren y que tengan sus prerequisitos satisfechos.
+*			a su prerequisito más cercano y el último periodo.
 */
-void greedy(struct _malla *malla) {
+void greedy(struct _malla *malla, int carga_periodo[], int cursos_periodo[]) {
 	struct _cursos *aux;
 	aux=primero;
+	int ult, min, max;
 	/*
 	*	Elegir punto de partida.
 	*/
 	while(aux!=NULL) {
 		if(aux->prereq==NULL) {
 			aux->periodo=1;
-			if (aux==getultimo(primero))
-				aux=primero;
-			else
-				aux=aux->siguiente;
+			carga_periodo[0]=aux->creditos;
+			cursos_periodo[0]=1;
 			break;
 		}
 		aux=aux->siguiente;
@@ -300,32 +307,126 @@ void greedy(struct _malla *malla) {
 	*	Bucle hasta asignar todos a un periodo.
 	*/
 	while(porasignar()) {
-		cargar_cargaacademica_greedy(malla);
+
 		while(prerequisitos_insatisfechos(aux->prereq) || aux->periodo!=0) {
 			if (aux==getultimo(primero))
 				aux=primero;
 			else
 				aux=aux->siguiente;
 		}
-		if(aux->prereq==NULL) {
-			/*
-			*	Asignar al periodo con menor cantidad de carga.
-			*/
-			aux->periodo=min_periodo(1, malla);
+		ult=ultimo_periodo(aux->prereq);
+		min=cumple_min(malla, carga_periodo, cursos_periodo, ult);
+		if(min) {
+			aux->periodo=min;
+			carga_periodo[aux->periodo-1]+=aux->creditos;
+			cursos_periodo[aux->periodo-1]+=1;
 		}
 		else {
-			// Encontrar el periodo más lejano de sus prerequisitos, asignar entre ese y el infinito al perido con menor carga academica.
-			aux->periodo=min_periodo(ultimo_periodo(aux->prereq), malla);
+			max=cumple_max(malla, carga_periodo, cursos_periodo, aux->creditos, ult);
+			aux->periodo=max;
+			carga_periodo[aux->periodo-1]+=aux->creditos;
+			cursos_periodo[aux->periodo-1]+=1;
 		}
+	
+		//if (aux==getultimo(primero))
+				aux=primero;
+			//else
+			//	aux=aux->siguiente;
+		/*
+		req=aux->req;
+		if(req!=NULL) {
+			while(req!=NULL) {
+				aux2=primero;
+				while(aux2!=NULL) {
+					if(aux2->pos==req->curso && aux2->periodo!=0 && !prerequisitos_insatisfechos(aux2->prereq)) {
+						i=0;
+						ult=ultimo_periodo(aux2->prereq);
+						while(carga_periodo[ult+i]+aux2->creditos>malla->carga_optima ||
+							cursos_periodo[ult+i]==malla->max_cursos)
+							i++;
+						aux2->periodo=ult+i+1;
+						carga_periodo[ult+i]+=aux2->creditos;
+						cursos_periodo[ult+i]+=1;
+					}
+					aux2=aux2->siguiente;
+				}
+				req=req->siguiente;
+			}
+		}
+		
+		aux=aux->siguiente;
+		if(aux==NULL) {
+			aux=primero;
+		}
+
+		if(aux->periodo==0 && !prerequisitos_insatisfechos(aux->prereq)) {
+			ult=ultimo_periodo(aux->prereq);
+			i=0;
+			while(carga_periodo[ult+i]+aux->creditos>malla->carga_optima ||
+				cursos_periodo[ult+i]==malla->max_cursos)
+				i++;
+			aux->periodo=ult+i+1;
+			carga_periodo[ult+i]+=aux->creditos;
+			cursos_periodo[ult+i]+=1;
+		}
+		var++;
+		if(var>80)
+			break;
+		*/	
 	}
 }
 
+int altura(struct _cursos *curso){
+	int max=0,temp;
+	struct _req *req=curso->req;
+	struct _cursos *aux;
+	if (req==NULL)
+		return 0;
+	else {
+		while(req!=NULL) {
+			aux=primero;
+			while(aux!=NULL) {
+				if(aux->pos==req->curso) {
+					temp=altura(aux);
+					if(temp>max)
+						max=temp;
+					break;
+				}
+				aux=aux->siguiente;
+			}
+			req=req->siguiente;
+		}
+		return max+1;
+	}
+}
+
+/*
+* Mide la altura de cada arbol de restricciones
+*/
+void cadena(struct _cursos *aux) {
+	while(aux!=NULL) {
+		aux->cadena=altura(aux);
+		aux=aux->siguiente;
+	}
+}
+/*
+*	Ver el largo del arreglo
+*/
+int len(struct _req *req){
+	int i=0;
+	while(req!=NULL) {
+		i+=1;
+		req=req->siguiente;
+	}
+	return i;
+
+}
 
 /*
 *	Quicksort, cortesía de http://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
 */
 // Partitions the list taking the last element as the pivot
-struct _cursos *partition(struct _cursos *head, struct _cursos *end,
+struct _cursos *partition_periodo(struct _cursos *head, struct _cursos *end,
                        struct _cursos **newHead, struct _cursos **newEnd)
 {
     struct _cursos *pivot = end;
@@ -370,10 +471,60 @@ struct _cursos *partition(struct _cursos *head, struct _cursos *end,
     return pivot;
 }
  
+/*
+*	Quicksort, cortesía de http://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
+*/
+// Partitions the list taking the last element as the pivot
+struct _cursos *partition_cadena(struct _cursos *head, struct _cursos *end,
+                       struct _cursos **newHead, struct _cursos **newEnd)
+{
+    struct _cursos *pivot = end;
+    struct _cursos *prev = NULL, *cur = head, *tail = pivot;
+ 
+    // During partition, both the head and end of the list might change
+    // which is updated in the newHead and newEnd variables
+    while (cur != pivot)
+    {
+        if (cur->cadena > pivot->cadena)
+        {
+            // First node that has a value less than the pivot - becomes
+            // the new head
+            if ((*newHead) == NULL)
+                (*newHead) = cur;
+ 
+            prev = cur;  
+            cur = cur->siguiente;
+        }
+        else // If cur node is greater than pivot
+        {
+            // Move cur node to next of tail, and change tail
+            if (prev)
+                prev->siguiente = cur->siguiente;
+            struct _cursos *tmp = cur->siguiente;
+            cur->siguiente = NULL;
+            tail->siguiente = cur;
+            tail = cur;
+            cur = tmp;
+        }
+    }
+ 
+    // If the pivot data is the smallest element in the current list,
+    // pivot becomes the head
+    if ((*newHead) == NULL)
+        (*newHead) = pivot;
+ 
+    // Update newEnd to the current last node
+    (*newEnd) = tail;
+ 
+    // Return the pivot node
+    return pivot;
+}
+
  
 //here the sorting happens exclusive of the end node
-struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end)
+struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end, int i)
 {
+	struct _cursos *pivot;
     // base condition
     if (!head || head == end)
         return head;
@@ -382,7 +533,10 @@ struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end)
  
     // Partition the list, newHead and newEnd will be updated
     // by the partition function
-    struct _cursos *pivot = partition(head, end, &newHead, &newEnd);
+    if(i==1)
+    	pivot = partition_periodo(head, end, &newHead, &newEnd);
+    else
+    	pivot = partition_cadena(head, end, &newHead, &newEnd);
  
     // If pivot is the smallest element - no need to recur for
     // the left part.
@@ -395,7 +549,7 @@ struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end)
         tmp->siguiente = NULL;
  
         // Recur for the list before pivot
-        newHead = quickSortRecur(newHead, tmp);
+        newHead = quickSortRecur(newHead, tmp,i);
  
         // Change next of last node of the left half to pivot
         tmp = getultimo(newHead);
@@ -403,20 +557,16 @@ struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end)
     }
  
     // Recur for the list after the pivot element
-    pivot->siguiente = quickSortRecur(pivot->siguiente, newEnd);
+    pivot->siguiente = quickSortRecur(pivot->siguiente, newEnd,i);
  
     return newHead;
 }
 
 
-
-
-
-
 /*
 *	Archivo Solución
 */
-void archivo_solucion(struct _malla *malla, clock_t t1) {
+void archivo_solucion(struct _malla *malla, clock_t t1, int carga_periodo[]) {
 	struct _cursos *aux;
 	int i;
 	FILE *fp;
@@ -429,7 +579,7 @@ void archivo_solucion(struct _malla *malla, clock_t t1) {
 		fprintf(fp, "%d ", aux->pos);
 		aux=aux->siguiente;
 		if(aux==NULL) {
-			fprintf(fp, ": %d\n", sbest[i]);
+			fprintf(fp, ": %d\n", carga_periodo[i]);
 			break;
 		}
 		while(aux->periodo==(i+1)) {
@@ -439,10 +589,10 @@ void archivo_solucion(struct _malla *malla, clock_t t1) {
 			if(aux==NULL)
 				break;
 		}
-		fprintf(fp, ": %d\n", sbest[i]);
+		fprintf(fp, ": %d\n", carga_periodo[i]);
 	}
 	fprintf(fp, "\n");
-	fprintf(fp, "Máxima Carga Académica %d\n",max_periodo(malla));
+	fprintf(fp, "Máxima Carga Académica %d\n",max_periodo(malla,carga_periodo));
 	fprintf(fp, "Tiempo Ejecución %f s", ((double)clock() - t1) / (double)CLOCKS_PER_SEC);
 	fclose(fp);
 }
@@ -453,13 +603,20 @@ void archivo_solucion(struct _malla *malla, clock_t t1) {
 int main() {
 	clock_t t1=clock();
 	struct _malla *malla;
+	int carga_periodo[]={0,0,0,0,0,0,0,0,0,0,0,0};
+	int cursos_periodo[]={0,0,0,0,0,0,0,0,0,0,0,0};
 	malla = (struct _malla *) malloc (sizeof(struct _malla));
 	primero = (struct _cursos *) NULL;
-	leer(&malla);	
-	greedy(malla);
-	cargar_cargaacademica_greedy(malla);
-	primero = quickSortRecur(primero, getultimo(primero));
-	mostrar(malla);
-	archivo_solucion(malla, t1);
+	leer(&malla);
+	/* Medir cadena de dependencia */
+	cadena(primero);
+	/* Ordenar por largo de cadena de dependencia */
+	primero = quickSortRecur(primero, getultimo(primero),2);
+	/* greedy */
+	greedy(malla,carga_periodo,cursos_periodo);
+	/* Ordenar por periodo */
+	primero = quickSortRecur(primero, getultimo(primero),1);
+	/* Crear archivo con el resultado */
+	archivo_solucion(malla, t1,carga_periodo);
 	return 0;
  }
