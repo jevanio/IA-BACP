@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define Instancia "instancias/bacp8.txt"
+#define Instancia "instancias/bacp10.txt"
+#define largo 5
 
 struct _malla{
 	int n_cursos;
@@ -34,8 +35,14 @@ struct _cursos {
 	struct _cursos *siguiente;
 };
 
+struct _LS {
+	int curso;
+	int periodo;
+	struct _LS *siguiente;
+};
+
 struct _cursos *primero;
-int sbest[12];
+
 /*
 *	encontrar ultimo elemento de la lista
 */
@@ -332,48 +339,96 @@ void greedy(struct _malla *malla, int carga_periodo[], int cursos_periodo[]) {
 				aux=primero;
 			//else
 			//	aux=aux->siguiente;
-		/*
-		req=aux->req;
-		if(req!=NULL) {
-			while(req!=NULL) {
-				aux2=primero;
-				while(aux2!=NULL) {
-					if(aux2->pos==req->curso && aux2->periodo!=0 && !prerequisitos_insatisfechos(aux2->prereq)) {
-						i=0;
-						ult=ultimo_periodo(aux2->prereq);
-						while(carga_periodo[ult+i]+aux2->creditos>malla->carga_optima ||
-							cursos_periodo[ult+i]==malla->max_cursos)
-							i++;
-						aux2->periodo=ult+i+1;
-						carga_periodo[ult+i]+=aux2->creditos;
-						cursos_periodo[ult+i]+=1;
+	}
+}
+
+/*
+*	Ver el largo de lista tabu
+*/
+int lenTS(struct _LS *ls){
+	int i=0;
+	while(ls!=NULL) {
+		i+=1;
+		ls=ls->siguiente;
+	}
+	return i;
+}
+
+int cumple_prereq(struct _prereq *prereq, int nuevo_periodo) {
+	struct _cursos *aux;
+	while(prereq!=NULL) {
+		aux=primero;
+		//printf("%d %d\n", aux->periodo, nuevo_periodo);
+		while(aux!=NULL) {
+			
+			if(aux->pos==prereq->curso && aux->periodo>=nuevo_periodo)
+				return 1;
+			aux=aux->siguiente;
+		}
+		prereq=prereq->siguiente;
+	}
+	return 0;
+}
+
+int infactible(struct _malla *malla, int carga_periodo[], int cursos_periodo[], int creditos, struct _cursos *aux, int nuevo_periodo) {
+	int ult=0;
+	struct _prereq *prereq=aux->prereq;
+	if (!cumple_max(malla, carga_periodo, cursos_periodo, creditos, ult) || cumple_min(malla, carga_periodo, cursos_periodo, ult) ||
+		cumple_prereq(prereq,nuevo_periodo))
+		return 1;
+	return 0;
+}
+
+void tabusearch(struct _malla *malla, struct _cursos *s_actual, int carga_periodo[], int cursos_periodo[]) {
+	struct _cursos *aux;
+	int carga_periodo_temp[12], cursos_periodo_temp[12];
+	int i,j,pos,periodo,creditos;
+	for(j=0;j<malla->n_periodos;j++) {
+		carga_periodo_temp[j]=carga_periodo[j];
+		cursos_periodo_temp[j]=cursos_periodo[j];
+	}
+
+	while(s_actual!=NULL) {
+		pos=s_actual->pos;
+		periodo=s_actual->periodo;
+		creditos=s_actual->creditos;
+		for(i=0;i<malla->n_periodos;i++) {
+			if(i!=(periodo-1)) {
+				//printf("%d %d %d\n",pos, periodo, i+1);
+				carga_periodo_temp[periodo-1]-=creditos;
+				cursos_periodo_temp[periodo-1]-=1;
+				carga_periodo_temp[i]+=creditos;
+				cursos_periodo_temp[i]+=1;
+				if(max_periodo(malla,carga_periodo)>max_periodo(malla,carga_periodo_temp) &&
+				 !infactible(malla, carga_periodo_temp, cursos_periodo_temp, creditos,s_actual,i+1)) {
+					//printf("%d %d \n", max_periodo(malla,carga_periodo), max_periodo(malla,carga_periodo_temp));
+					for(j=0;j<malla->n_periodos;j++) {
+						carga_periodo[j]=carga_periodo_temp[j];
+						cursos_periodo[j]=cursos_periodo_temp[j];
 					}
-					aux2=aux2->siguiente;
+					aux=primero;
+					while(aux!=NULL) {
+						if(aux->pos==pos){
+							printf("%d %d %d\n",pos, periodo, i+1);
+							s_actual->periodo=i+1;
+							break;
+						}
+						aux=aux->siguiente;
+					}
+					break;
 				}
-				req=req->siguiente;
+				else {
+					//printf("%d %d \n", max_periodo(malla,carga_periodo), max_periodo(malla,carga_periodo_temp));
+					for(j=0;j<malla->n_periodos;j++) {
+						carga_periodo_temp[j]=carga_periodo[j];
+						cursos_periodo_temp[j]=cursos_periodo[j];
+					}
+				}
 			}
 		}
-		
-		aux=aux->siguiente;
-		if(aux==NULL) {
-			aux=primero;
-		}
-
-		if(aux->periodo==0 && !prerequisitos_insatisfechos(aux->prereq)) {
-			ult=ultimo_periodo(aux->prereq);
-			i=0;
-			while(carga_periodo[ult+i]+aux->creditos>malla->carga_optima ||
-				cursos_periodo[ult+i]==malla->max_cursos)
-				i++;
-			aux->periodo=ult+i+1;
-			carga_periodo[ult+i]+=aux->creditos;
-			cursos_periodo[ult+i]+=1;
-		}
-		var++;
-		if(var>80)
-			break;
-		*/	
+		s_actual=s_actual->siguiente;
 	}
+
 }
 
 int altura(struct _cursos *curso){
@@ -408,18 +463,6 @@ void cadena(struct _cursos *aux) {
 		aux->cadena=altura(aux);
 		aux=aux->siguiente;
 	}
-}
-/*
-*	Ver el largo del arreglo
-*/
-int len(struct _req *req){
-	int i=0;
-	while(req!=NULL) {
-		i+=1;
-		req=req->siguiente;
-	}
-	return i;
-
 }
 
 /*
@@ -607,6 +650,8 @@ int main() {
 	int cursos_periodo[]={0,0,0,0,0,0,0,0,0,0,0,0};
 	malla = (struct _malla *) malloc (sizeof(struct _malla));
 	primero = (struct _cursos *) NULL;
+
+	/* Leer archivo de instancia */
 	leer(&malla);
 	/* Medir cadena de dependencia */
 	cadena(primero);
@@ -614,8 +659,13 @@ int main() {
 	primero = quickSortRecur(primero, getultimo(primero),2);
 	/* greedy */
 	greedy(malla,carga_periodo,cursos_periodo);
+	primero = quickSortRecur(primero, getultimo(primero),1);
+	mostrar(malla);
+	/* TabuSearch */
+	tabusearch(malla,primero,carga_periodo,cursos_periodo);
 	/* Ordenar por periodo */
 	primero = quickSortRecur(primero, getultimo(primero),1);
+	//mostrar(malla);
 	/* Crear archivo con el resultado */
 	archivo_solucion(malla, t1,carga_periodo);
 	return 0;
