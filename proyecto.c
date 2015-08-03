@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #define Instancia "instancias/bacp10.txt"
-#define largo 20
+#define largo 50
 #define MAX_ITER 100000
 
 struct _malla{
@@ -307,7 +307,6 @@ void greedy(struct _malla *malla, int carga_periodo[], int cursos_periodo[]) {
 	*	Bucle hasta asignar todos a un periodo.
 	*/
 	while(porasignar()) {
-
 		while(prerequisitos_insatisfechos(aux->prereq) || aux->periodo!=0) {
 			if (aux==getultimo(primero))
 				aux=primero;
@@ -514,7 +513,7 @@ void cadena(struct _cursos *aux) {
 *	Quicksort, cortesía de http://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
 */
 // Partitions the list taking the last element as the pivot
-struct _cursos *partition_periodo(struct _cursos *head, struct _cursos *end,
+struct _cursos *partition_periodo_asc(struct _cursos *head, struct _cursos *end,
                        struct _cursos **newHead, struct _cursos **newEnd)
 {
     struct _cursos *pivot = end;
@@ -558,12 +557,57 @@ struct _cursos *partition_periodo(struct _cursos *head, struct _cursos *end,
     // Return the pivot node
     return pivot;
 }
+
+struct _cursos *partition_periodo_des(struct _cursos *head, struct _cursos *end,
+                       struct _cursos **newHead, struct _cursos **newEnd)
+{
+    struct _cursos *pivot = end;
+    struct _cursos *prev = NULL, *cur = head, *tail = pivot;
+ 
+    // During partition, both the head and end of the list might change
+    // which is updated in the newHead and newEnd variables
+    while (cur != pivot)
+    {
+        if (cur->periodo > pivot->periodo)
+        {
+            // First node that has a value less than the pivot - becomes
+            // the new head
+            if ((*newHead) == NULL)
+                (*newHead) = cur;
+ 
+            prev = cur;  
+            cur = cur->siguiente;
+        }
+        else // If cur node is greater than pivot
+        {
+            // Move cur node to next of tail, and change tail
+            if (prev)
+                prev->siguiente = cur->siguiente;
+            struct _cursos *tmp = cur->siguiente;
+            cur->siguiente = NULL;
+            tail->siguiente = cur;
+            tail = cur;
+            cur = tmp;
+        }
+    }
+ 
+    // If the pivot data is the smallest element in the current list,
+    // pivot becomes the head
+    if ((*newHead) == NULL)
+        (*newHead) = pivot;
+ 
+    // Update newEnd to the current last node
+    (*newEnd) = tail;
+ 
+    // Return the pivot node
+    return pivot;
+}
  
 /*
 *	Quicksort, cortesía de http://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
 */
 // Partitions the list taking the last element as the pivot
-struct _cursos *partition_cadena(struct _cursos *head, struct _cursos *end,
+struct _cursos *partition_cadena_des(struct _cursos *head, struct _cursos *end,
                        struct _cursos **newHead, struct _cursos **newEnd)
 {
     struct _cursos *pivot = end;
@@ -608,6 +652,50 @@ struct _cursos *partition_cadena(struct _cursos *head, struct _cursos *end,
     return pivot;
 }
 
+struct _cursos *partition_cadena_asc(struct _cursos *head, struct _cursos *end,
+                       struct _cursos **newHead, struct _cursos **newEnd)
+{
+    struct _cursos *pivot = end;
+    struct _cursos *prev = NULL, *cur = head, *tail = pivot;
+ 
+    // During partition, both the head and end of the list might change
+    // which is updated in the newHead and newEnd variables
+    while (cur != pivot)
+    {
+        if (cur->cadena < pivot->cadena)
+        {
+            // First node that has a value less than the pivot - becomes
+            // the new head
+            if ((*newHead) == NULL)
+                (*newHead) = cur;
+ 
+            prev = cur;  
+            cur = cur->siguiente;
+        }
+        else // If cur node is greater than pivot
+        {
+            // Move cur node to next of tail, and change tail
+            if (prev)
+                prev->siguiente = cur->siguiente;
+            struct _cursos *tmp = cur->siguiente;
+            cur->siguiente = NULL;
+            tail->siguiente = cur;
+            tail = cur;
+            cur = tmp;
+        }
+    }
+ 
+    // If the pivot data is the smallest element in the current list,
+    // pivot becomes the head
+    if ((*newHead) == NULL)
+        (*newHead) = pivot;
+ 
+    // Update newEnd to the current last node
+    (*newEnd) = tail;
+ 
+    // Return the pivot node
+    return pivot;
+}
  
 //here the sorting happens exclusive of the end node
 struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end, int i)
@@ -621,10 +709,14 @@ struct _cursos *quickSortRecur(struct _cursos *head, struct _cursos *end, int i)
  
     // Partition the list, newHead and newEnd will be updated
     // by the partition function
-    if(i==1)
-    	pivot = partition_periodo(head, end, &newHead, &newEnd);
+    if (i==1)
+    	pivot = partition_cadena_des(head, end, &newHead, &newEnd);
+    else if (i==2)
+    	pivot = partition_cadena_asc(head, end, &newHead, &newEnd);
+    else if (i==3)
+    	pivot = partition_periodo_des(head, end, &newHead, &newEnd);
     else
-    	pivot = partition_cadena(head, end, &newHead, &newEnd);
+    	pivot = partition_periodo_asc(head, end, &newHead, &newEnd);
  
     // If pivot is the smallest element - no need to recur for
     // the left part.
@@ -702,15 +794,22 @@ int main() {
 	leer(&malla);
 	/* Medir cadena de dependencia */
 	cadena(primero);
-	/* Ordenar por largo de cadena de dependencia */
-	primero = quickSortRecur(primero, getultimo(primero),2);
+	/* Orden descendente por cadena de dependencia */
+	primero = quickSortRecur(primero, getultimo(primero),1);
 	/* greedy */
 	greedy(malla,carga_periodo,cursos_periodo);
-	primero = quickSortRecur(primero, getultimo(primero),1);
+	/* Orden descendente por cadena de dependencia */
+	//primero = quickSortRecur(primero, getultimo(primero),1);
+	/* Orden ascendente por cadena de dependencia */
+	//primero = quickSortRecur(primero, getultimo(primero),2);
+	/* Orden descendente por periodo */
+	//primero = quickSortRecur(primero, getultimo(primero),3);
+	/* Orden ascendente por periodo */
+	primero = quickSortRecur(primero, getultimo(primero),4);
 	/* TabuSearch */
 	tabusearch(malla,primero,&LS,carga_periodo,cursos_periodo);
-	/* Ordenar por periodo */
-	primero = quickSortRecur(primero, getultimo(primero),1);
+	/* Ordenar ascendente por periodo */
+	primero = quickSortRecur(primero, getultimo(primero),4);
 	mostrar(malla);
 	/* Crear archivo con el resultado */
 	archivo_solucion(malla, t1,carga_periodo);
