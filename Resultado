@@ -1,14 +1,14 @@
 Salida Instancia instancias/bacp10.txt
 Periodo 1
-9 - 4 - 1 - 14 - 8 - 5 - 3 : 20
+9 - 4 - 1 - 14 : 13
 Periodo 2
-16 - 15 - 10 - 2 : 14
+16 - 15 - 10 - 8 : 14
 Periodo 3
 20 - 19 - 17 : 11
 Periodo 4
 26 - 25 - 23 - 27 : 16
 Periodo 5
-22 - 21 - 7 : 11
+22 - 21 - 7 - 3 : 13
 Periodo 6
 0 - 34 - 32 - 30 : 12
 Periodo 7
@@ -16,9 +16,9 @@ Periodo 7
 Periodo 8
 6 - 41 - 40 - 39 - 28 - 18 : 15
 Periodo 9
-38 - 37 - 36 - 11 : 11
+38 - 37 - 36 - 11 - 5 - 2 : 16
 Periodo 10
 35 - 33 - 31 : 11
 
-Máxima Carga Académica 20
-Tiempo Ejecución 0.725132 s
+Máxima Carga Académica 16
+Tiempo Ejecución 0.325319 s

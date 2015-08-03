@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #define Instancia "instancias/bacp10.txt"
-#define largo 10
+#define largo 20
+#define MAX_ITER 100000
 
 struct _malla{
 	int n_cursos;
@@ -57,7 +58,6 @@ struct _cursos *getultimo(struct _cursos *aux) {
 */
 void leer(struct _malla **mallas) {
 	int i,flag;
-	float opt=0;
 	struct _cursos *nuevo, *aux;
 	struct _prereq *prereq, *aux2;
 	struct _req *req, *aux3;
@@ -81,7 +81,6 @@ void leer(struct _malla **mallas) {
 		nuevo = (struct _cursos *) malloc (sizeof(struct _cursos));
 		nuevo->pos = i;
 		fscanf(fp, "%d ", &nuevo->creditos);
-		opt+=nuevo->creditos;
 		nuevo->periodo=0;
 		nuevo->cadena=0;
 		nuevo->prereq=NULL;
@@ -139,8 +138,6 @@ void leer(struct _malla **mallas) {
 			aux3->siguiente=req;
 		}
 	}
-	opt=opt/malla->n_periodos;
-	malla->carga_optima=opt;
 	fclose (fp);
 }
 
@@ -210,21 +207,6 @@ int det_max_periodo(struct _malla *malla,int carga_periodo[]) {
 	}
 	return max;
 }
-
-/*
-*	Determina el periodo con menor carga académica. Si hay dos iguales se queda con el primero que encuentra.
-*/
-/*int min_periodo(int p, struct _malla *malla, int carga_periodo[]) {
-	int min_p=p,saux=carga_periodo[p];
-	for(p;p<malla->n_periodos;p++)
-	{
-		if(carga_periodo[p]<saux) {
-			saux=carga_periodo[p];
-			min_p=p;
-		}
-	}
-	return min_p+1;
-}*/
 
 /*
 * Indica si quedan cursos por asignar a un periodo, por defecto todos parten en 0.
@@ -457,8 +439,7 @@ void tabusearch(struct _malla *malla, struct _cursos *s_actual, struct _LS **LS,
 					carga_periodo_temp[i]+=creditos;
 					cursos_periodo_temp[i]+=1;
 					if(max_periodo(malla,carga_periodo)>=max_periodo(malla,carga_periodo_temp) &&
-					 !infactible(malla, carga_periodo_temp, cursos_periodo_temp, creditos,s_actual,i+1)/* &&
-					 	det_max_periodo(malla, carga_periodo)!=det_max_periodo(malla, carga_periodo_temp)*/) {
+					 !infactible(malla, carga_periodo_temp, cursos_periodo_temp, creditos,s_actual,i+1)) {
 						
 						for(j=0;j<malla->n_periodos;j++) {
 							carga_periodo[j]=carga_periodo_temp[j];
@@ -492,7 +473,7 @@ void tabusearch(struct _malla *malla, struct _cursos *s_actual, struct _LS **LS,
 				s_actual=s_actual->siguiente;
 		}
 		iteraciones+=1;
-	}while(cambio && iteraciones<1000000);
+	}while(cambio && iteraciones<MAX_ITER);
 }
 
 int altura(struct _cursos *curso){
@@ -716,7 +697,6 @@ int main() {
 	malla = (struct _malla *) malloc (sizeof(struct _malla));
 	primero = (struct _cursos *) NULL;
 	LS = (struct _LS *) NULL;
-	//push(0,0,&LS);
 
 	/* Leer archivo de instancia */
 	leer(&malla);
@@ -727,7 +707,6 @@ int main() {
 	/* greedy */
 	greedy(malla,carga_periodo,cursos_periodo);
 	primero = quickSortRecur(primero, getultimo(primero),1);
-	//mostrar(malla);
 	/* TabuSearch */
 	tabusearch(malla,primero,&LS,carga_periodo,cursos_periodo);
 	/* Ordenar por periodo */
