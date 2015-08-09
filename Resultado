@@ -1,24 +1,20 @@
-Salida Instancia instancias/bacp10.txt
+Salida Instancia instancias/bacp8.txt
 Periodo 1
-41 - 9 - 4 - 1 : 14
+0 - 24 - 29 - 5 - 8 - 42 - 21 : 17
 Periodo 2
-40 - 21 - 16 - 10 : 14
+27 - 22 - 41 - 6 - 13 - 4 : 17
 Periodo 3
-13 - 17 - 15 - 8 - 3 : 13
+18 - 10 - 35 - 14 - 9 : 17
 Periodo 4
-18 - 22 - 7 - 5 : 12
+25 - 43 - 34 - 15 - 19 : 17
 Periodo 5
-24 - 34 - 19 - 14 : 13
+3 - 37 - 32 - 38 - 1 - 16 : 15
 Periodo 6
-39 - 12 - 25 - 20 : 14
+23 - 7 - 20 - 2 - 31 : 16
 Periodo 7
-29 - 0 - 26 - 23 : 13
+33 - 44 - 45 - 12 - 28 - 26 : 17
 Periodo 8
-6 - 28 - 32 - 30 : 13
-Periodo 9
-38 - 37 - 36 - 27 : 14
-Periodo 10
-35 - 33 - 31 - 11 - 2 : 14
+40 - 39 - 17 - 11 - 30 - 36 : 17
 
-Máxima Carga Académica 14
-Tiempo Ejecución 0.356022 s
+Máxima Carga Académica 17
+Tiempo Ejecución 0.017910 s

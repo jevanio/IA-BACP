@@ -2,6 +2,10 @@
 Proyecto de IA, resolver BACP mediante algoritmo Greedy y Tabú Search
 
 Instrucciones de uso:
-1) En proyecto.c, l4 se define la ubicación del archivo de la instancia. Indicar del siguiente modo:
-	"#define Instancia "instancias/bacp8.txt""
-2) Compilary ejecutar mediante makefile.
+1) En proyecto.c se indica la instancia, el largo de la lista tabú y la cantidad de iteraciones.
+		#define Instancia "instancias/bacp8.txt"
+		#define largo 50
+		#define MAX_ITER 100000"
+Para cambiar la instancia se debe cambiar la ruta del archivo.
+
+2) Compilar y ejecutar en consola mediante el comando "make".
