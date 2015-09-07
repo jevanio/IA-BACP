@@ -1,20 +1,16 @@
-Salida Instancia instancias/bacp8.txt
+Salida Instancia mallainf.txt
 Periodo 1
-0 - 24 - 29 - 5 - 8 - 42 - 21 : 17
+3 - 5 - 16 - 2 - 1 - 0 : 17
 Periodo 2
-27 - 22 - 41 - 6 - 13 - 4 : 17
+34 - 8 - 7 - 6 - 11 : 16
 Periodo 3
-18 - 10 - 35 - 14 - 9 : 17
+17 - 15 - 14 - 19 - 23 - 22 : 17
 Periodo 4
-25 - 43 - 34 - 15 - 19 : 17
+13 - 4 - 25 - 27 - 9 - 12 : 17
 Periodo 5
-3 - 37 - 32 - 38 - 1 - 16 : 15
+29 - 20 - 31 - 28 - 24 - 26 : 17
 Periodo 6
-23 - 7 - 20 - 2 - 31 : 16
-Periodo 7
-33 - 44 - 45 - 12 - 28 - 26 : 17
-Periodo 8
-40 - 39 - 17 - 11 - 30 - 36 : 17
+10 - 18 - 21 - 33 - 32 - 30 : 17
 
 Máxima Carga Académica 17
-Tiempo Ejecución 0.017910 s
+Tiempo Ejecución 0.017556 s

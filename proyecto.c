@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include "sort.h"
-#define Instancia "instancias/bacp8.txt"
-#define largo 50
+#define Instancia "mallainf.txt"
+#define largo 18
 #define MAX_ITER 100000
 
 struct _malla{
@@ -159,6 +159,20 @@ int max_periodo(struct _malla *malla,int carga_periodo[]) {
 	for(i=0;i<malla->n_periodos;i++)
 	{
 		if(carga_periodo[i]>saux) {
+			saux=carga_periodo[i];
+		}
+	}
+	return saux;
+}
+
+/*
+*	Determina la maxima carga académica.
+*/
+int min_periodo(struct _malla *malla,int carga_periodo[]) {
+	int i, saux=carga_periodo[0];
+	for(i=0;i<malla->n_periodos;i++)
+	{
+		if(carga_periodo[i]<saux) {
 			saux=carga_periodo[i];
 		}
 	}
@@ -499,6 +513,13 @@ void grado(struct _cursos *aux) {
 	}
 }
 
+void logs(struct _malla *malla, clock_t t1, int carga_periodo[]){
+	FILE *fp;
+	fp = fopen ("logs", "a+");
+
+	fprintf(fp, "%d %d %f\n",max_periodo(malla,carga_periodo), min_periodo(malla,carga_periodo), ((double)clock() - t1) / (double)CLOCKS_PER_SEC);
+	fclose(fp);
+}
 /*
 *	Genera el archivo Solución
 */
@@ -558,10 +579,6 @@ int main() {
 
 	/* Orden descendente por grado de dependencia */
 	//primero = quickSortRecur(primero, get_last(primero),1);
-	/* Orden ascendente por grado de dependencia */
-	//primero = quickSortRecur(primero, get_last(primero),2);
-	/* Orden descendente por periodo */
-	//primero = quickSortRecur(primero, get_last(primero),3);
 	/* Orden ascendente por periodo */
 	//primero = quickSortRecur(primero, get_last(primero),4);
 	
@@ -573,7 +590,7 @@ int main() {
 	
 	/* Ordenar ascendente por periodo */
 	primero = quickSortRecur(primero, get_last(primero),4);
-	mostrar(malla);
+	//mostrar(malla);
 	/* Crear archivo con el resultado */
 	archivo_solucion(malla, t1,carga_periodo);
 	return 0;
